@@ -1,0 +1,15 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Post {
+  id: ID!
+  title: String!
+  body: String!
+  authorId: String!
+}
+
+type Query {
+  posts: [Post!]!
+  post(id: ID!): Post
+}

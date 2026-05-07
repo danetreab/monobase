@@ -1,0 +1,413 @@
+{
+  "info": {
+    "name": "Monobase",
+    "description": "API collection for the Monobase backend: auth (better-auth), api-gateway (REST), and graphql. The gateway at {{gateway_url}} proxies /api/auth/* to the auth service and /graphql to the graphql service.\n\nUsage: Postman should keep cookies automatically across requests in a session — the better-auth session cookie is set by the sign-in request and is then included on subsequent calls (get-session, admin endpoints).\n\nNote: better-auth enforces an Origin check on authenticated state-changing requests (sign-out, admin/* mutations). The collection-level pre-request script automatically sets Origin: {{gateway_url}} on every request.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// better-auth requires Origin header on authenticated state-changing requests",
+          "// (CSRF protection). Always send the gateway URL as Origin.",
+          "const gatewayUrl = pm.collectionVariables.get('gateway_url');",
+          "if (gatewayUrl) {",
+          "  pm.request.headers.upsert({ key: 'Origin', value: gatewayUrl });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "auth_url",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "graphql_url",
+      "value": "http://localhost:3002",
+      "type": "string"
+    },
+    {
+      "key": "admin_email",
+      "value": "admin@example.com",
+      "type": "string"
+    },
+    {
+      "key": "admin_password",
+      "value": "password123",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string",
+      "description": "Populated by Sign Up / Sign In via test scripts"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Auth — direct (:3001)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{auth_url}}/health",
+              "host": ["{{auth_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "API Gateway",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth (via gateway)",
+      "description": "All requests go through the gateway at {{gateway_url}}, which proxies /api/auth/* to the auth service. This is how the dashboard talks to auth — never hit :3001 directly in real flows because the better-auth session cookie is scoped to the gateway origin.",
+      "item": [
+        {
+          "name": "Sign Up (email)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.user && json.user.id) {",
+                  "  pm.collectionVariables.set('user_id', json.user.id);",
+                  "  console.log('Saved user_id:', json.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\",\n  \"name\": \"Admin\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/sign-up/email",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "sign-up", "email"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sign In (email)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.user && json.user.id) {",
+                  "  pm.collectionVariables.set('user_id', json.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/sign-in/email",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "sign-in", "email"]
+            }
+          }
+        },
+        {
+          "name": "Get Session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/get-session",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "get-session"]
+            }
+          }
+        },
+        {
+          "name": "Sign Out",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/sign-out",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "sign-out"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin (better-auth admin plugin)",
+      "description": "Endpoints provided by better-auth's admin() plugin. Requires the calling user to have role='admin' in the user table. Promote a user with: UPDATE \"user\" SET role='admin' WHERE email='...';",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/admin/list-users?limit=100",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "admin", "list-users"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Set Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{user_id}}\",\n  \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/admin/set-role",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "admin", "set-role"]
+            }
+          }
+        },
+        {
+          "name": "Ban User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/admin/ban-user",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "admin", "ban-user"]
+            }
+          }
+        },
+        {
+          "name": "Unban User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/admin/unban-user",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "admin", "unban-user"]
+            }
+          }
+        },
+        {
+          "name": "Remove User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/admin/remove-user",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "admin", "remove-user"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "REST (api-gateway dummy data)",
+      "item": [
+        {
+          "name": "List Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/items",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "items"]
+            }
+          }
+        },
+        {
+          "name": "List Users (dummy REST)",
+          "description": "Hardcoded users from the gateway's REST controller. Distinct from the real auth users available via /api/auth/admin/list-users.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/users",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "users"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "GraphQL",
+      "item": [
+        {
+          "name": "Posts (via gateway)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Posts {\n  posts {\n    id\n    title\n    body\n    authorId\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/graphql",
+              "host": ["{{gateway_url}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "Single Post by ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Post($id: ID!) {\n  post(id: $id) {\n    id\n    title\n    body\n    authorId\n  }\n}",
+                "variables": "{\n  \"id\": \"1\"\n}"
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/graphql",
+              "host": ["{{gateway_url}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "Posts — direct (:3002)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Posts {\n  posts {\n    id\n    title\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphql_url}}/graphql",
+              "host": ["{{graphql_url}}"],
+              "path": ["graphql"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@repo/dashboard",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit -p tsconfig.app.json"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.5.2",
+    "@refinedev/antd": "^6.0.3",
+    "@refinedev/core": "^5.0.12",
+    "@refinedev/react-router": "^2.0.4",
+    "@refinedev/simple-rest": "^6.0.1",
+    "antd": "^5.22.0",
+    "axios": "^1.7.9",
+    "better-auth": "^1.6.9",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.0.0"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "5.9.2",
+    "vite": "^5.4.10"
+  }
+}
