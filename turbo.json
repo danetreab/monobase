@@ -12,6 +12,7 @@
         "BETTER_AUTH_URL",
         "AUTH_SERVICE_URL",
         "GRAPHQL_SERVICE_URL",
+        "REDIS_URL",
         "PORT",
         "VITE_API_URL"
       ]
@@ -31,6 +32,7 @@
         "BETTER_AUTH_URL",
         "AUTH_SERVICE_URL",
         "GRAPHQL_SERVICE_URL",
+        "REDIS_URL",
         "PORT",
         "VITE_API_URL"
       ]

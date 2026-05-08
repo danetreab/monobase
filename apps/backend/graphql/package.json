@@ -20,6 +20,9 @@
     "@nestjs/graphql": "^13.0.3",
     "@nestjs/microservices": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@repo/db": "*",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.45.2",
     "graphql": "^16.9.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
@@ -28,6 +31,7 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@repo/eslint-config": "*",
+    "@repo/redis-config": "*",
     "@repo/typescript-config": "*",
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",

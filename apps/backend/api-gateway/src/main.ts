@@ -1,3 +1,4 @@
+import "dotenv/config";
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { createProxyMiddleware } from "http-proxy-middleware";
@@ -11,6 +12,8 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Auth still goes over HTTP — better-auth requires HTTP semantics
+  // (cookies, OAuth redirects). Proxy /api/auth/* straight through.
   app.use(
     createProxyMiddleware({
       pathFilter: "/api/auth/**",
@@ -20,24 +23,8 @@ async function bootstrap() {
     }),
   );
 
-  app.use(
-    createProxyMiddleware({
-      pathFilter: "/graphql/**",
-      target: process.env.GRAPHQL_SERVICE_URL ?? "http://localhost:3002",
-      changeOrigin: true,
-      xfwd: true,
-      ws: true,
-    }),
-  );
-
-  app.use(
-    createProxyMiddleware({
-      pathFilter: ["/graphql"],
-      target: process.env.GRAPHQL_SERVICE_URL ?? "http://localhost:3002",
-      changeOrigin: true,
-      xfwd: true,
-    }),
-  );
+  // /graphql is no longer HTTP-proxied. It's handled by GraphqlController,
+  // which forwards the query to the graphql service over Redis transport.
 
   await app.listen(process.env.PORT ?? 3000);
 }
