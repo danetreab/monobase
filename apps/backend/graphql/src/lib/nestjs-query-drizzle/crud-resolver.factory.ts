@@ -95,6 +95,13 @@ function applyMutation(
   if (!desc) {
     throw new Error(`CrudResolver: missing prototype method "${methodName}"`);
   }
+  // tsc only emits design:paramtypes when a method already has a decorator in
+  // source. createOne/createMany/updateOne/updateMany are decorator-less in
+  // BaseCrudResolver — @Args still reads design:paramtypes even with an
+  // explicit type fn, so seed a placeholder before applying the decorator.
+  if (!Reflect.getMetadata("design:paramtypes", proto, methodName)) {
+    Reflect.defineMetadata("design:paramtypes", [Object], proto, methodName);
+  }
   Args("input", { type: inputType })(proto, methodName, 0);
   extra(proto, methodName, desc);
   Mutation(returnType, { name: schemaName })(proto, methodName, desc);

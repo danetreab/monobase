@@ -14,7 +14,9 @@ import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 import "@refinedev/antd/dist/reset.css";
 
 import { authProvider } from "./auth-provider";
-import { dataProvider } from "./data-provider";
+import { dataProvider, liveProvider, restDataProvider } from "./data-provider";
+import { ItemsCreate } from "./pages/items/create";
+import { ItemsEdit } from "./pages/items/edit";
 import { ItemsList } from "./pages/items/list";
 import { LoginPage } from "./pages/login";
 import { UsersList } from "./pages/users/list";
@@ -26,7 +28,11 @@ function App() {
         <AntdApp>
           <Refine
             authProvider={authProvider}
-            dataProvider={dataProvider}
+            dataProvider={{
+              default: dataProvider,
+              rest: restDataProvider,
+            }}
+            liveProvider={liveProvider}
             routerProvider={routerProvider}
             notificationProvider={useNotificationProvider}
             resources={[
@@ -38,12 +44,18 @@ function App() {
               {
                 name: "items",
                 list: "/items",
+                create: "/items/create",
+                edit: "/items/edit/:id",
                 meta: { label: "Items" },
               },
             ]}
             options={{
               syncWithLocation: true,
               warnWhenUnsavedChanges: true,
+              // "auto" makes refine subscribe each list/one query to its
+              // resource topic. Mutations elsewhere reach this client over
+              // graphql-ws and refine refetches automatically.
+              liveMode: "auto",
             }}
           >
             <Routes>
@@ -63,6 +75,8 @@ function App() {
                 <Route index element={<NavigateToResource resource="users" />} />
                 <Route path="/users" element={<UsersList />} />
                 <Route path="/items" element={<ItemsList />} />
+                <Route path="/items/create" element={<ItemsCreate />} />
+                <Route path="/items/edit/:id" element={<ItemsEdit />} />
                 <Route path="*" element={<ErrorComponent />} />
               </Route>
               <Route

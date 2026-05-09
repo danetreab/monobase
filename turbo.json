@@ -14,7 +14,9 @@
         "GRAPHQL_SERVICE_URL",
         "REDIS_URL",
         "PORT",
-        "VITE_API_URL"
+        "VITE_API_URL",
+        "GRAPHQL_TCP_HOST",
+        "GRAPHQL_TCP_PORT"
       ]
     },
     "lint": {
@@ -26,6 +28,7 @@
     "dev": {
       "cache": false,
       "persistent": true,
+      "dependsOn": ["^build"],
       "env": [
         "DATABASE_URL",
         "BETTER_AUTH_SECRET",
@@ -34,7 +37,9 @@
         "GRAPHQL_SERVICE_URL",
         "REDIS_URL",
         "PORT",
-        "VITE_API_URL"
+        "VITE_API_URL",
+        "GRAPHQL_TCP_HOST",
+        "GRAPHQL_TCP_PORT"
       ]
     }
   }

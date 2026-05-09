@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
 import { Button, Popconfirm, Space, Table, Tag, message } from "antd";
+import { useList } from "@refinedev/core";
+import gql from "graphql-tag";
 import { authClient } from "../../auth-client";
 
 type AdminUser = {
@@ -8,29 +9,42 @@ type AdminUser = {
   email: string;
   role: string | null;
   banned: boolean | null;
-  createdAt: Date | string;
+  createdAt: string;
 };
 
+const USERS_LIST_QUERY = gql`
+  query UsersList(
+    $filter: UserFilter
+    $paging: OffsetPaging
+    $sorting: [UserSort!]
+  ) {
+    users(filter: $filter, paging: $paging, sorting: $sorting) {
+      nodes {
+        id
+        name
+        email
+        role
+        banned
+        createdAt
+      }
+      totalCount
+    }
+  }
+`;
+
 export const UsersList = () => {
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
-  const load = async () => {
-    setLoading(true);
-    const { data, error } = await authClient.admin.listUsers({ query: { limit: 100 } });
-    setLoading(false);
-    if (error) {
-      messageApi.error(error.message ?? "Failed to load users");
-      return;
-    }
-    setUsers((data?.users ?? []) as AdminUser[]);
-  };
+  const { result, query } = useList<AdminUser>({
+    resource: "users",
+    pagination: { pageSize: 20 },
+    sorters: [{ field: "createdAt", order: "desc" }],
+    meta: { gqlQuery: USERS_LIST_QUERY },
+  });
 
-  useEffect(() => {
-    void load();
-  }, []);
-
+  // Admin mutations (role/ban) stay on authClient: better-auth's admin plugin
+  // takes care of session invalidation on ban, which a raw GraphQL update
+  // wouldn't trigger.
   const handleSetRole = async (userId: string, role: "admin" | "user") => {
     const { error } = await authClient.admin.setRole({ userId, role });
     if (error) {
@@ -38,7 +52,7 @@ export const UsersList = () => {
       return;
     }
     messageApi.success(`Role set to ${role}`);
-    void load();
+    void query.refetch();
   };
 
   const handleBan = async (userId: string) => {
@@ -48,7 +62,7 @@ export const UsersList = () => {
       return;
     }
     messageApi.success("User banned");
-    void load();
+    void query.refetch();
   };
 
   const handleUnban = async (userId: string) => {
@@ -58,7 +72,7 @@ export const UsersList = () => {
       return;
     }
     messageApi.success("User unbanned");
-    void load();
+    void query.refetch();
   };
 
   return (
@@ -66,9 +80,9 @@ export const UsersList = () => {
       {contextHolder}
       <Table<AdminUser>
         rowKey="id"
-        dataSource={users}
-        loading={loading}
-        pagination={{ pageSize: 20 }}
+        dataSource={(result?.data ?? []) as AdminUser[]}
+        loading={query.isLoading}
+        pagination={{ pageSize: 20, total: result?.total ?? 0 }}
         columns={[
           { title: "Name", dataIndex: "name" },
           { title: "Email", dataIndex: "email" },

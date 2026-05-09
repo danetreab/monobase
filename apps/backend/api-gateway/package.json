@@ -28,7 +28,6 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@repo/eslint-config": "*",
-    "@repo/redis-config": "*",
     "@repo/typescript-config": "*",
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",

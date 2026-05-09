@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 import { ClientsModule, Transport } from "@nestjs/microservices";
-import { redisOptionsFromUrl } from "@repo/redis-config";
 import { GraphqlController } from "./graphql.controller";
 import { GRAPHQL_CLIENT } from "./graphql.tokens";
 
@@ -9,8 +8,11 @@ import { GRAPHQL_CLIENT } from "./graphql.tokens";
     ClientsModule.register([
       {
         name: GRAPHQL_CLIENT,
-        transport: Transport.REDIS,
-        options: redisOptionsFromUrl(process.env.REDIS_URL ?? "redis://localhost:6379"),
+        transport: Transport.TCP,
+        options: {
+          host: process.env.GRAPHQL_TCP_HOST ?? "127.0.0.1",
+          port: Number(process.env.GRAPHQL_TCP_PORT ?? 4002),
+        },
       },
     ]),
   ],

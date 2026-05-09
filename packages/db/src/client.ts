@@ -1,6 +1,9 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool, type PoolConfig } from "pg";
-import * as schema from "./schema";
+import * as authSchema from "./schema";
+import * as itemsSchema from "./items";
+
+const schema = { ...authSchema, ...itemsSchema };
 
 export type Schema = typeof schema;
 export type Db = NodePgDatabase<Schema>;
