@@ -15,6 +15,13 @@
       "when": 1778314183910,
       "tag": "0001_classy_morbius",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778423966590,
+      "tag": "0002_strong_ted_forrester",
+      "breakpoints": true
     }
   ]
 }

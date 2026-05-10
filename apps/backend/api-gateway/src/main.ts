@@ -23,6 +23,25 @@ async function bootstrap() {
     }),
   );
 
+  // Multipart file upload endpoints live on the graphql service. They can't
+  // be sent over the Redis/TCP microservice transport (which is JSON-only),
+  // so we HTTP-proxy them like /api/auth/*. Browser requests stay same-origin
+  // and the better-auth session cookie still applies.
+  const graphqlHttpUrl =
+    process.env.GRAPHQL_HTTP_URL ?? "http://localhost:3002";
+  app.use(
+    createProxyMiddleware({
+      pathFilter: [
+        "/api/v1/items/*/files",
+        "/api/v1/items/*/files/**",
+        "/api/v1/uploaded-files/**",
+      ],
+      target: graphqlHttpUrl,
+      changeOrigin: true,
+      xfwd: true,
+    }),
+  );
+
   // /graphql is no longer HTTP-proxied. It's handled by GraphqlController,
   // which forwards the query to the graphql service over Redis transport.
 

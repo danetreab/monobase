@@ -8,7 +8,7 @@ import { PostsModule } from "./posts/posts.module";
 import { GraphqlMicroserviceController } from "./transport/graphql-microservice.controller";
 import { UsersModule } from "./admin/users/users.module";
 import { ItemsModule } from "./admin/items/items.module";
-import { FilesModule } from "./files/files.module";
+import { UploadsModule } from "./uploads/uploads.module";
 
 @Module({
   imports: [
@@ -35,7 +35,7 @@ import { FilesModule } from "./files/files.module";
     PostsModule,
     UsersModule,
     ItemsModule,
-    FilesModule,
+    UploadsModule,
   ],
   controllers: [GraphqlMicroserviceController],
 })

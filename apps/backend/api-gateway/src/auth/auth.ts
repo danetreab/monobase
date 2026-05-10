@@ -26,5 +26,5 @@ export const auth = betterAuth({
   },
   emailAndPassword: { enabled: true },
   plugins: [admin()],
-  trustedOrigins: ["http://localhost:3000"],
+  trustedOrigins: ["*"],
 });

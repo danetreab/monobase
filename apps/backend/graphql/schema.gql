@@ -58,6 +58,7 @@ type Item {
   price: Float!
   createdAt: DateTime!
   updatedAt: DateTime!
+  files: [ItemFile!]!
 }
 
 type ItemConnection {
@@ -68,6 +69,18 @@ type ItemConnection {
 
 type ItemDeleteResponse {
   id: ID
+}
+
+type ItemFile {
+  id: ID!
+  filename: String!
+  originalFilename: String!
+  mimetype: String!
+  size: Int!
+  url: String!
+  thumbnailUrl: String
+  hasThumbnail: Boolean!
+  createdAt: DateTime!
 }
 
 type Query {

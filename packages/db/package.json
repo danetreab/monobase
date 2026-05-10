@@ -33,6 +33,7 @@
   "devDependencies": {
     "@repo/typescript-config": "*",
     "@types/pg": "^8.11.10",
+    "dotenv": "^16.4.7",
     "drizzle-kit": "^0.31.10",
     "typescript": "5.9.2"
   }

@@ -2,9 +2,8 @@ import { Global, Module } from "@nestjs/common";
 import { Client } from "minio";
 import { MINIO_BUCKET, MINIO_CLIENT } from "./minio.tokens";
 
-// Single shared MinIO client per process. Marked @Global so the FilesModule
-// (and any future feature that wants to read/write objects) can inject the
-// client without re-importing this module.
+// Single shared MinIO client per process. Marked @Global so any feature module
+// can inject the client without re-importing this module.
 @Global()
 @Module({
   providers: [

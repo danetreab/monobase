@@ -9,6 +9,7 @@ export {
   accountRelations,
 } from "./schema";
 export { item } from "./items";
-export { file, fileStatus } from "./files";
+export { uploadedFile } from "./uploaded-files";
+export type { UploadedFile, NewUploadedFile } from "./uploaded-files";
 export { createDb, DRIZZLE_DB } from "./client";
 export type { Db, Schema, CreateDbResult } from "./client";
