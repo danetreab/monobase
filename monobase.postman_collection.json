@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Monobase",
-    "description": "API collection for the Monobase backend: auth (better-auth), api-gateway (REST + GraphQL proxy), and graphql (NestJS code-first).\n\nArchitecture:\n- gateway ({{gateway_url}}) is the single entry point for browser traffic. It proxies /api/auth/* to the auth service, exposes /api/v1/* REST routes, and forwards POST /graphql into the graphql service over a Redis microservice transport.\n- auth ({{auth_url}}) and graphql ({{graphql_url}}) are reachable directly for debugging only.\n\nSession handling: Postman keeps cookies automatically across a session — better-auth sets the session cookie on sign-in and the same cookie is then sent on get-session, admin/* and authed /graphql calls.\n\nOrigin header: better-auth enforces an Origin check on authenticated state-changing requests. The collection-level pre-request script sets Origin: {{gateway_url}} on every request.\n\nGraphQL admin/users: the @repo/graphql service exposes a CRUD resolver over the shared user table from @repo/db. Mutations write directly to Postgres — they bypass better-auth password hashing and account-row creation, so users created via createOneUser cannot sign in via email/password until a password is set through the auth API.\n\nSubscriptions: createdUser / updatedOneUser / deletedOneUser are GraphQL subscriptions and require WebSocket transport. Use a Postman WebSocket request to ws://localhost:3000/graphql to test them — they aren't included as collection items because Postman models WS separately.",
+    "description": "API collection for the Monobase backend: auth (better-auth), api-gateway (REST + GraphQL proxy), and graphql (NestJS code-first).\n\nArchitecture:\n- gateway ({{gateway_url}}) is the single entry point for browser traffic. It proxies /api/auth/* to the auth service, exposes /api/v1/* REST routes, and forwards POST /graphql/v1 into the graphql service over a Redis/TCP microservice transport.\n- auth ({{auth_url}}) and graphql ({{graphql_url}}) are reachable directly for debugging only.\n\nGraphQL versioning: the GraphQL endpoint is path-versioned to mirror the REST surface — POST /graphql/v1 (gateway) and ws://localhost:3002/graphql/v1 (subscriptions) are the only supported paths.\n\nSession handling: Postman keeps cookies automatically across a session — better-auth sets the session cookie on sign-in and the same cookie is then sent on get-session, admin/* and authed /graphql/v1 calls.\n\nOrigin header: better-auth enforces an Origin check on authenticated state-changing requests. The collection-level pre-request script sets Origin: {{gateway_url}} on every request.\n\nGraphQL admin/users: the @repo/graphql service exposes a CRUD resolver over the shared user table from @repo/db. Mutations write directly to Postgres — they bypass better-auth password hashing and account-row creation, so users created via createOneUser cannot sign in via email/password until a password is set through the auth API.\n\nFiles upload: two-phase flow against MinIO. createUploadUrl returns a pre-signed PUT URL and a fileKey, the client PUTs the binary directly to MinIO, then calls registerUpload(fileKey) to flip the DB row to completed. Both mutations require an authenticated session and tie the file to the caller via uploadedBy.\n\nSubscriptions: createdUser / updatedOneUser / deletedOneUser are GraphQL subscriptions and require WebSocket transport. Use a Postman WebSocket request to ws://localhost:3002/graphql/v1 to test them — they aren't included as collection items because Postman models WS separately.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -47,6 +47,17 @@
       "type": "string"
     },
     {
+      "key": "user_email",
+      "value": "user@example.com",
+      "type": "string",
+      "description": "Regular (non-admin) user used by the Auth → Sign Up (regular user) request."
+    },
+    {
+      "key": "user_password",
+      "value": "password123",
+      "type": "string"
+    },
+    {
       "key": "user_id",
       "value": "",
       "type": "string",
@@ -57,6 +68,30 @@
       "value": "",
       "type": "string",
       "description": "Populated by GraphQL Create One User test script. Used by Get / Update One / Delete One."
+    },
+    {
+      "key": "upload_url",
+      "value": "",
+      "type": "string",
+      "description": "Populated by GraphQL → Files → Create Upload URL. Used by 'Upload Binary to MinIO'."
+    },
+    {
+      "key": "file_key",
+      "value": "",
+      "type": "string",
+      "description": "Populated by GraphQL → Files → Create Upload URL. Used by 'Register Upload' and 'Get File by ID'."
+    },
+    {
+      "key": "file_content_type",
+      "value": "application/octet-stream",
+      "type": "string",
+      "description": "Sent as Content-Type to both Create Upload URL and the direct PUT to MinIO. They MUST match — MinIO rejects the PUT otherwise because the presigned URL is bound to the Content-Type used at presign time."
+    },
+    {
+      "key": "created_file_id",
+      "value": "",
+      "type": "string",
+      "description": "Populated by Register Upload — the file row id."
     }
   ],
   "item": [
@@ -94,7 +129,7 @@
       "description": "All requests go through the gateway at {{gateway_url}}, which proxies /api/auth/* to the auth service. This is how the dashboard talks to auth — never hit :3001 directly in real flows because the better-auth session cookie is scoped to the gateway origin.",
       "item": [
         {
-          "name": "Sign Up (email)",
+          "name": "Sign Up (admin email)",
           "event": [
             {
               "listen": "test",
@@ -131,7 +166,44 @@
           "response": []
         },
         {
-          "name": "Sign In (email)",
+          "name": "Sign Up (regular user)",
+          "description": "Creates a non-admin user. Run this then sign in as them to test the file-upload flow with role=user (default).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.user && json.user.id) {",
+                  "  pm.collectionVariables.set('user_id', json.user.id);",
+                  "  console.log('Saved user_id:', json.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\",\n  \"name\": \"Regular User\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/sign-up/email",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "sign-up", "email"]
+            }
+          }
+        },
+        {
+          "name": "Sign In (admin)",
           "event": [
             {
               "listen": "test",
@@ -157,6 +229,41 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/sign-in/email",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "sign-in", "email"]
+            }
+          }
+        },
+        {
+          "name": "Sign In (regular user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.user && json.user.id) {",
+                  "  pm.collectionVariables.set('user_id', json.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}"
             },
             "url": {
               "raw": "{{gateway_url}}/api/auth/sign-in/email",
@@ -340,7 +447,7 @@
     },
     {
       "name": "GraphQL — Posts",
-      "description": "Read-only resolver over an in-memory dummy list. Useful for verifying that the gateway → graphql Redis transport is working end-to-end.",
+      "description": "Read-only resolver over an in-memory dummy list. Useful for verifying that the gateway → graphql TCP transport is working end-to-end.",
       "item": [
         {
           "name": "Posts (via gateway)",
@@ -360,9 +467,9 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/graphql",
+              "raw": "{{gateway_url}}/graphql/v1",
               "host": ["{{gateway_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
             }
           }
         },
@@ -384,9 +491,9 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/graphql",
+              "raw": "{{gateway_url}}/graphql/v1",
               "host": ["{{gateway_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
             }
           }
         },
@@ -409,9 +516,9 @@
               }
             },
             "url": {
-              "raw": "{{graphql_url}}/graphql",
+              "raw": "{{graphql_url}}/graphql/v1",
               "host": ["{{graphql_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
             }
           }
         }
@@ -440,9 +547,9 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/graphql",
+              "raw": "{{gateway_url}}/graphql/v1",
               "host": ["{{gateway_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
             }
           }
         },
@@ -465,9 +572,9 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/graphql",
+              "raw": "{{gateway_url}}/graphql/v1",
               "host": ["{{gateway_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
             }
           }
         },
@@ -489,9 +596,9 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/graphql",
+              "raw": "{{gateway_url}}/graphql/v1",
               "host": ["{{gateway_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
             }
           }
         },
@@ -530,9 +637,9 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/graphql",
+              "raw": "{{gateway_url}}/graphql/v1",
               "host": ["{{gateway_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
             }
           }
         },
@@ -554,9 +661,9 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/graphql",
+              "raw": "{{gateway_url}}/graphql/v1",
               "host": ["{{gateway_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
             }
           }
         },
@@ -579,9 +686,9 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/graphql",
+              "raw": "{{gateway_url}}/graphql/v1",
               "host": ["{{gateway_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
             }
           }
         },
@@ -604,9 +711,9 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/graphql",
+              "raw": "{{gateway_url}}/graphql/v1",
               "host": ["{{gateway_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
             }
           }
         },
@@ -629,9 +736,9 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/graphql",
+              "raw": "{{gateway_url}}/graphql/v1",
               "host": ["{{gateway_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
             }
           }
         },
@@ -654,9 +761,187 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/graphql",
+              "raw": "{{gateway_url}}/graphql/v1",
               "host": ["{{gateway_url}}"],
-              "path": ["graphql"]
+              "path": ["graphql", "v1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "GraphQL — Files (Upload)",
+      "description": "Two-phase generic file upload against MinIO.\n\n1. Create Upload URL — server presigns a PUT against MinIO and inserts a pending file row owned by the caller. Returns { uploadUrl, fileKey, bucket, expiresInSeconds }. Test script saves uploadUrl + fileKey into collection vars.\n2. Upload Binary to MinIO — direct PUT to the presigned URL with the binary body. Run this OUTSIDE the gateway (no Origin/auth). Content-Type MUST match the value passed to createUploadUrl.\n3. Register Upload — server stat-checks the object in MinIO and flips the row to completed (size + etag). Test script saves the file row id into {{created_file_id}}.\n\nAll three GraphQL operations run through the gateway and require an authenticated session (any role). Listing/find scopes to the caller; admins see every file.",
+      "item": [
+        {
+          "name": "Create Upload URL",
+          "description": "Step 1. Sets {{upload_url}} and {{file_key}} for the next step.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const data = json && json.data && json.data.createUploadUrl;",
+                  "if (data) {",
+                  "  pm.collectionVariables.set('upload_url', data.uploadUrl);",
+                  "  pm.collectionVariables.set('file_key', data.fileKey);",
+                  "  console.log('Saved upload_url + file_key:', data.fileKey);",
+                  "} else if (json && json.errors) {",
+                  "  console.log('GraphQL errors:', JSON.stringify(json.errors));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation CreateUploadUrl($input: CreateUploadUrlInput!) {\n  createUploadUrl(input: $input) {\n    uploadUrl\n    fileKey\n    bucket\n    expiresInSeconds\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"originalName\": \"report.pdf\",\n    \"contentType\": \"{{file_content_type}}\",\n    \"sizeBytes\": 2048\n  }\n}"
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/graphql/v1",
+              "host": ["{{gateway_url}}"],
+              "path": ["graphql", "v1"]
+            }
+          }
+        },
+        {
+          "name": "Upload Binary to MinIO",
+          "description": "Step 2 — direct PUT to the presigned URL captured in {{upload_url}}. Pick a file in the request body (Body → binary) before sending. The Content-Type MUST equal {{file_content_type}} (the same value you passed to createUploadUrl) — MinIO rejects the PUT otherwise.\n\nThis request bypasses the collection's Origin pre-request via a request-level override (better-auth doesn't sit on this path, but the extra header confuses some MinIO setups). It does NOT need to go through the gateway.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Strip the collection-level Origin header — MinIO's presign signature",
+                  "// covers the host + query, and an unexpected Origin can also break CORS",
+                  "// preflight on some setups.",
+                  "pm.request.headers.remove('Origin');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "{{file_content_type}}"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {}
+            },
+            "url": {
+              "raw": "{{upload_url}}",
+              "host": ["{{upload_url}}"]
+            }
+          }
+        },
+        {
+          "name": "Register Upload",
+          "description": "Step 3. Confirms the upload — server stats the object in MinIO and flips the row to completed.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const data = json && json.data && json.data.registerUpload;",
+                  "if (data && data.id) {",
+                  "  pm.collectionVariables.set('created_file_id', data.id);",
+                  "  console.log('Saved created_file_id:', data.id);",
+                  "} else if (json && json.errors) {",
+                  "  console.log('GraphQL errors:', JSON.stringify(json.errors));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation RegisterUpload($input: RegisterUploadInput!) {\n  registerUpload(input: $input) {\n    id\n    key\n    bucket\n    originalName\n    contentType\n    sizeBytes\n    etag\n    status\n    uploadedBy\n    createdAt\n    completedAt\n    updatedAt\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"fileKey\": \"{{file_key}}\"\n  }\n}"
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/graphql/v1",
+              "host": ["{{gateway_url}}"],
+              "path": ["graphql", "v1"]
+            }
+          }
+        },
+        {
+          "name": "List Files (mine)",
+          "description": "Returns every file owned by the caller. Admins see all files in the bucket.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Files {\n  files {\n    id\n    key\n    bucket\n    originalName\n    contentType\n    sizeBytes\n    etag\n    status\n    uploadedBy\n    createdAt\n    completedAt\n    updatedAt\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/graphql/v1",
+              "host": ["{{gateway_url}}"],
+              "path": ["graphql", "v1"]
+            }
+          }
+        },
+        {
+          "name": "Get File by ID",
+          "description": "Uses {{created_file_id}} captured by Register Upload.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query File($id: ID!) {\n  file(id: $id) {\n    id\n    key\n    bucket\n    originalName\n    contentType\n    sizeBytes\n    etag\n    status\n    uploadedBy\n    createdAt\n    completedAt\n    updatedAt\n  }\n}",
+                "variables": "{\n  \"id\": \"{{created_file_id}}\"\n}"
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/graphql/v1",
+              "host": ["{{gateway_url}}"],
+              "path": ["graphql", "v1"]
             }
           }
         }

@@ -22,6 +22,12 @@ async function bootstrap() {
     },
   });
 
+  // Run module init (which builds the Apollo schema and populates
+  // GraphQLSchemaHost) BEFORE opening the TCP transport. Otherwise the gateway
+  // can fire a graphql.execute message into the controller before the schema
+  // exists, surfacing as "GraphQL schema has not yet been created".
+  await app.init();
+
   await app.startAllMicroservices();
   await app.listen(process.env.PORT ?? 3002);
 }

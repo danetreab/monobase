@@ -16,7 +16,13 @@
         "PORT",
         "VITE_API_URL",
         "GRAPHQL_TCP_HOST",
-        "GRAPHQL_TCP_PORT"
+        "GRAPHQL_TCP_PORT",
+        "MINIO_ENDPOINT",
+        "MINIO_PORT",
+        "MINIO_USE_SSL",
+        "MINIO_ACCESS_KEY",
+        "MINIO_SECRET_KEY",
+        "MINIO_BUCKET"
       ]
     },
     "lint": {
@@ -39,7 +45,13 @@
         "PORT",
         "VITE_API_URL",
         "GRAPHQL_TCP_HOST",
-        "GRAPHQL_TCP_PORT"
+        "GRAPHQL_TCP_PORT",
+        "MINIO_ENDPOINT",
+        "MINIO_PORT",
+        "MINIO_USE_SSL",
+        "MINIO_ACCESS_KEY",
+        "MINIO_SECRET_KEY",
+        "MINIO_BUCKET"
       ]
     }
   }

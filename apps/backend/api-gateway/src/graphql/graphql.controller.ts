@@ -16,7 +16,7 @@ type AuthedRequest = Request & {
   session?: unknown;
 };
 
-@Controller("graphql")
+@Controller("graphql/v1")
 @UseGuards(AuthGuard)
 export class GraphqlController {
   constructor(@Inject(GRAPHQL_CLIENT) private readonly client: ClientProxy) {}

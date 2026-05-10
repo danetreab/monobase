@@ -12,11 +12,11 @@ const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 // microservice transport doesn't carry WS upgrades — point straight at the
 // graphql service for live updates. HTTP queries/mutations still go through
 // the gateway so the better-auth cookie / AuthGuard chain stays intact.
-const wsUrl = import.meta.env.VITE_GRAPHQL_WS_URL ?? "ws://localhost:3002/graphql";
+const wsUrl = import.meta.env.VITE_GRAPHQL_WS_URL ?? "ws://localhost:3002/graphql/v1";
 
 // `credentials: "include"` lets the better-auth session cookie ride along on
 // every GraphQL request — without it the gateway's AuthGuard rejects.
-const graphqlClient = new GraphQLClient(`${baseUrl}/graphql`, {
+const graphqlClient = new GraphQLClient(`${baseUrl}/graphql/v1`, {
   credentials: "include",
 });
 
