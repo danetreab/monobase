@@ -1,0 +1,102 @@
+{
+  "pages": {
+    "login": {
+      "title": "ចូលទៅគណនីរបស់អ្នក",
+      "signin": "ចូល",
+      "divider": "ឬ",
+      "fields": {
+        "email": "អ៊ីម៉ែល",
+        "password": "ពាក្យសម្ងាត់"
+      },
+      "errors": {
+        "requiredEmail": "សូមបញ្ចូលអ៊ីម៉ែល",
+        "requiredPassword": "សូមបញ្ចូលពាក្យសម្ងាត់"
+      },
+      "buttons": {
+        "submit": "ចូល",
+        "forgotPassword": "ភ្លេចពាក្យសម្ងាត់?",
+        "noAccount": "មិនទាន់មានគណនី?",
+        "rememberMe": "ចងចាំខ្ញុំ"
+      }
+    },
+    "error": {
+      "info": "អ្នកប្រហែលជាភ្លេចបន្ថែម component {{action}} ទៅ resource {{resource}}។",
+      "404": "សូមអភ័យទោស ទំព័រនេះមិនមាន។",
+      "resource404": "តើអ្នកបានបង្កើត resource {{resource}} ហើយឬនៅ?",
+      "backHome": "ត្រឡប់ទៅទំព័រដើម"
+    }
+  },
+  "actions": {
+    "list": "បញ្ជី",
+    "create": "បង្កើត",
+    "edit": "កែប្រែ",
+    "show": "មើល",
+    "delete": "លុប",
+    "clone": "ចម្លង"
+  },
+  "buttons": {
+    "create": "បង្កើត",
+    "save": "រក្សាទុក",
+    "logout": "ចាកចេញ",
+    "delete": "លុប",
+    "edit": "កែប្រែ",
+    "cancel": "បោះបង់",
+    "confirm": "តើអ្នកប្រាកដឬទេ?",
+    "filter": "តម្រង",
+    "clear": "សម្អាត",
+    "refresh": "ផ្ទុកឡើងវិញ",
+    "show": "បង្ហាញ",
+    "undo": "មិនធ្វើវិញ",
+    "import": "នាំចូល",
+    "clone": "ចម្លង",
+    "notAccessTitle": "អ្នកមិនមានសិទ្ធិចូលប្រើ"
+  },
+  "warnWhenUnsavedChanges": "តើអ្នកប្រាកដចង់ចាកចេញ? អ្នកមានការផ្លាស់ប្តូរដែលមិនទាន់រក្សាទុក។",
+  "notifications": {
+    "success": "ជោគជ័យ",
+    "error": "កំហុស (លេខកូដ: {{statusCode}})",
+    "undoable": "អ្នកមាន {{seconds}} វិនាទីដើម្បីមិនធ្វើវិញ",
+    "createSuccess": "បានបង្កើត {{resource}} ដោយជោគជ័យ",
+    "createError": "មានកំហុសក្នុងការបង្កើត {{resource}} (លេខកូដ: {{statusCode}})",
+    "deleteSuccess": "បានលុប {{resource}} ដោយជោគជ័យ",
+    "deleteError": "មានកំហុសក្នុងការលុប {{resource}} (លេខកូដ: {{statusCode}})",
+    "editSuccess": "បានកែប្រែ {{resource}} ដោយជោគជ័យ",
+    "editError": "មានកំហុសក្នុងការកែប្រែ {{resource}} (លេខកូដ: {{statusCode}})",
+    "importProgress": "កំពុងនាំចូល: {{processed}}/{{total}}"
+  },
+  "loading": "កំពុងផ្ទុក",
+  "tags": {
+    "clone": "ចម្លង"
+  },
+  "table": {
+    "actions": "សកម្មភាព"
+  },
+  "breadcrumbs": {
+    "home": "ទំព័រដើម"
+  },
+  "dashboard": {
+    "title": "ផ្ទាំងគ្រប់គ្រង"
+  },
+  "resources": {
+    "users": "អ្នកប្រើប្រាស់",
+    "items": "ធាតុ"
+  },
+  "users": {
+    "users": "អ្នកប្រើប្រាស់",
+    "titles": {
+      "list": "បញ្ជីអ្នកប្រើប្រាស់",
+      "create": "បង្កើតអ្នកប្រើប្រាស់",
+      "edit": "កែប្រែអ្នកប្រើប្រាស់",
+      "show": "មើលអ្នកប្រើប្រាស់"
+    }
+  },
+  "items": {
+    "items": "ធាតុ",
+    "titles": {
+      "list": "បញ្ជីធាតុ",
+      "create": "បង្កើតធាតុ",
+      "edit": "កែប្រែធាតុ",
+      "show": "មើលធាតុ"
+    }
+  }
+}

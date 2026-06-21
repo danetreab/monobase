@@ -78,9 +78,20 @@ export const verification = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
+export const userInvite = pgTable("user_invite", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
+  invites: many(userInvite),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -93,6 +104,13 @@ export const sessionRelations = relations(session, ({ one }) => ({
 export const accountRelations = relations(account, ({ one }) => ({
   user: one(user, {
     fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+export const userInviteRelations = relations(userInvite, ({ one }) => ({
+  user: one(user, {
+    fields: [userInvite.userId],
     references: [user.id],
   }),
 }));

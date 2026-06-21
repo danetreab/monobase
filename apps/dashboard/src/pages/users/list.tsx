@@ -1,7 +1,30 @@
 import { Button, Popconfirm, Space, Table, Tag, message } from "antd";
-import { useList } from "@refinedev/core";
+import { useList, useInvalidate } from "@refinedev/core";
+import axios from "axios";
 import gql from "graphql-tag";
+import { useNavigate } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { authClient } from "../../auth-client";
+
+const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+
+const gqlFetch = async <T,>(query: string, variables: Record<string, unknown>): Promise<T> => {
+  const { data } = await axios.post<{ data?: T; errors?: { message: string }[] }>(
+    `${baseUrl}/graphql/v1`,
+    { query, variables },
+    { withCredentials: true },
+  );
+  if (data.errors?.length) throw new Error(data.errors[0].message);
+  return data.data as T;
+};
+
+const GENERATE_INVITE_MUTATION = `
+  mutation GenerateUserInvite($userId: ID!) {
+    generateUserInvite(userId: $userId) {
+      token
+    }
+  }
+`;
 
 type AdminUser = {
   id: string;
@@ -34,6 +57,8 @@ const USERS_LIST_QUERY = gql`
 
 export const UsersList = () => {
   const [messageApi, contextHolder] = message.useMessage();
+  const navigate = useNavigate();
+  const invalidate = useInvalidate();
 
   const { result, query } = useList<AdminUser>({
     resource: "users",
@@ -42,9 +67,6 @@ export const UsersList = () => {
     meta: { gqlQuery: USERS_LIST_QUERY },
   });
 
-  // Admin mutations (role/ban) stay on authClient: better-auth's admin plugin
-  // takes care of session invalidation on ban, which a raw GraphQL update
-  // wouldn't trigger.
   const handleSetRole = async (userId: string, role: "admin" | "user") => {
     const { error } = await authClient.admin.setRole({ userId, role });
     if (error) {
@@ -75,9 +97,30 @@ export const UsersList = () => {
     void query.refetch();
   };
 
+  const handleRegenerateInvite = async (userId: string) => {
+    try {
+      const result = await gqlFetch<{
+        generateUserInvite: { token: string };
+      }>(GENERATE_INVITE_MUTATION, { userId });
+      const url = `${window.location.origin}/accept-invite?token=${result.generateUserInvite.token}`;
+      await navigator.clipboard.writeText(url);
+      messageApi.success("Invite link copied to clipboard");
+      await invalidate({ resource: "users", invalidates: ["list"] });
+    } catch {
+      messageApi.error("Failed to generate invite link");
+    }
+  };
+
   return (
     <>
       {contextHolder}
+
+      <div style={{ marginBottom: 16, display: "flex", justifyContent: "flex-end" }}>
+        <Button type="primary" onClick={() => navigate("/users/create")}>
+          Create User
+        </Button>
+      </div>
+
       <Table<AdminUser>
         rowKey="id"
         dataSource={(result?.data ?? []) as AdminUser[]}
@@ -96,7 +139,11 @@ export const UsersList = () => {
             title: "Status",
             dataIndex: "banned",
             render: (banned: boolean | null) =>
-              banned ? <Tag color="red">banned</Tag> : <Tag color="green">active</Tag>,
+              banned ? (
+                <Tag color="red">banned</Tag>
+              ) : (
+                <Tag color="green">active</Tag>
+              ),
           },
           {
             title: "Actions",
@@ -123,11 +170,16 @@ export const UsersList = () => {
                     </Button>
                   </Popconfirm>
                 )}
+                <Button size="small" onClick={() => handleRegenerateInvite(record.id)}>
+                  Invite Link
+                </Button>
               </Space>
             ),
           },
         ]}
       />
+
+      <Outlet />
     </>
   );
 };

@@ -8,6 +8,9 @@ if (!url) {
 export const redis = new Redis(url, {
   lazyConnect: true,
   maxRetriesPerRequest: 3,
+  connectTimeout: 5000,
+  commandTimeout: 3000,
+  enableReadyCheck: true,
 });
 
 redis.on("error", (err) => {

@@ -4,9 +4,11 @@ export {
   session,
   account,
   verification,
+  userInvite,
   userRelations,
   sessionRelations,
   accountRelations,
+  userInviteRelations,
 } from "./schema";
 export { item } from "./items";
 export { uploadedFile } from "./uploaded-files";
