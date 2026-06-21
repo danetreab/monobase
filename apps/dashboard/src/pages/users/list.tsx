@@ -1,6 +1,6 @@
 import { Button, Popconfirm, Space, Table, Tag, message } from "antd";
 import { useInvalidate } from "@refinedev/core";
-import { List, useTable } from "@refinedev/antd";
+import { Breadcrumb, List, useTable } from "@refinedev/antd";
 import axios from "axios";
 import gql from "graphql-tag";
 import { Outlet } from "react-router-dom";
@@ -117,7 +117,7 @@ export const UsersList = () => {
 
   return (
     <>
-      <List breadcrumb={false}>
+      <List>
         <Table<AdminUser> {...tableProps} rowKey="id">
           <Table.Column title="Name" dataIndex="name" />
           <Table.Column title="Email" dataIndex="email" />
