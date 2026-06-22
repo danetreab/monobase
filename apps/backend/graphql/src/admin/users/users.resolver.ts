@@ -1,6 +1,10 @@
-import { ForbiddenException } from "@nestjs/common";
 import { Args, Context, ID, Mutation, Query, Resolver } from "@nestjs/graphql";
 import { CrudResolver } from "../../lib/nestjs-query-drizzle";
+import {
+  CurrentUser,
+  type GqlAuthContext,
+  requireAdmin,
+} from "../../auth/gql-auth";
 import { AcceptInviteInput } from "./dto/accept-invite.input";
 import { CreateAdminUserInput } from "./dto/create-admin-user.input";
 import { CreateUserResult } from "./dto/create-user-result.dto";
@@ -8,14 +12,7 @@ import { GenerateInviteResult } from "./dto/generate-invite-result.dto";
 import { InviteInfoDto } from "./dto/invite-info.dto";
 import { UserDto } from "./dto/user.dto";
 import { UsersService } from "./users.service";
-
-type GqlContext = { user: { id: string; role: string | null } | null };
-
-function requireAdmin(ctx: GqlContext) {
-  if (!ctx.user?.role?.includes("admin")) {
-    throw new ForbiddenException("Admin access required");
-  }
-}
+import { AuthUser } from "@repo/auth-context";
 
 @Resolver(() => UserDto)
 export class UsersResolver extends CrudResolver({
@@ -29,7 +26,7 @@ export class UsersResolver extends CrudResolver({
   @Mutation(() => CreateUserResult)
   async createAdminUser(
     @Args("input") input: CreateAdminUserInput,
-    @Context() ctx: GqlContext,
+    @Context() ctx: GqlAuthContext,
   ): Promise<CreateUserResult> {
     requireAdmin(ctx);
     return this.users.createAdminUser(input);
@@ -38,7 +35,7 @@ export class UsersResolver extends CrudResolver({
   @Mutation(() => GenerateInviteResult)
   async generateUserInvite(
     @Args("userId", { type: () => ID }) userId: string,
-    @Context() ctx: GqlContext,
+    @Context() ctx: GqlAuthContext,
   ): Promise<GenerateInviteResult> {
     requireAdmin(ctx);
     return this.users.generateInvite(userId);
@@ -48,7 +45,7 @@ export class UsersResolver extends CrudResolver({
   async setUserPassword(
     @Args("userId", { type: () => ID }) userId: string,
     @Args("password") password: string,
-    @Context() ctx: GqlContext,
+    @Context() ctx: GqlAuthContext,
   ): Promise<boolean> {
     requireAdmin(ctx);
     return this.users.setUserPassword(userId, password);
@@ -64,7 +61,9 @@ export class UsersResolver extends CrudResolver({
 
   // Public — no auth required (gateway allows this operation by name)
   @Mutation(() => Boolean)
-  async acceptUserInvite(@Args("input") input: AcceptInviteInput): Promise<boolean> {
+  async acceptUserInvite(
+    @Args("input") input: AcceptInviteInput,
+  ): Promise<boolean> {
     return this.users.acceptInvite(input.token, input.password);
   }
 }

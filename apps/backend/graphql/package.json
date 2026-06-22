@@ -20,6 +20,7 @@
     "@nestjs/graphql": "^13.0.3",
     "@nestjs/microservices": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@repo/auth-context": "*",
     "@repo/db": "*",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",

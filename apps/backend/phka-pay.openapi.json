@@ -1,0 +1,746 @@
+{
+  "openapi": "3.1.0",
+  "paths": {
+    "/khqr/generate": {
+      "post": {
+        "description": "Creates a one-time KHQR string for a payment of the given amount, currency, and expiration. The merchant identity is taken from the API key.",
+        "operationId": "BakongController_generateKHQR",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateKHQRDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "KHQR generated successfully."
+          }
+        },
+        "security": [
+          {
+            "api-auth-type": []
+          },
+          {
+            "api-key": []
+          }
+        ],
+        "summary": "Generate a KHQR code",
+        "tags": [
+          "KHQR (Bakong)"
+        ]
+      }
+    },
+    "/khqr/generate-with-merchant": {
+      "post": {
+        "description": "Same as `POST /khqr/generate` but lets you override the merchant identity in the QR payload (acquiring bank, name, city, terminal, etc.).",
+        "operationId": "BakongController_generateKHQRWithMerchant",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateKHQRWithMerchantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "api-auth-type": []
+          },
+          {
+            "api-key": []
+          }
+        ],
+        "summary": "Generate a KHQR code with explicit merchant info",
+        "tags": [
+          "KHQR (Bakong)"
+        ]
+      }
+    },
+    "/khqr/check": {
+      "post": {
+        "description": "Returns the current status of a previously generated KHQR transaction, looked up by its MD5 hash.",
+        "operationId": "BakongController_checkKHQR",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "md5"
+                ],
+                "properties": {
+                  "md5": {
+                    "type": "string",
+                    "example": "abcd1234..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Check payment status by MD5",
+        "tags": [
+          "KHQR (Bakong)"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Payment Gateway API",
+    "description": "Public API for KHQR (Bakong) payments, Payway checkout, API key management, and webhook configuration.\n\n## Authentication\n\n- **API key endpoints** (KHQR generate / Payway checkout): send `x-auth-type: api-key` (or `api-payway` for Payway) and `x-api-key: <your key>`.\n- **Account endpoints** (API key & webhook management): authenticate with the Better Auth session cookie issued by `POST /auth/sign-in`.\n- A small number of endpoints (`/api-key/validate`, `/payway/hook`) are intentionally public.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "KHQR (Bakong)",
+      "description": "Generate, verify, decode, and check KHQR codes."
+    },
+    {
+      "name": "Webhooks",
+      "description": "Events PhkaPay sends to your server. You receive these — see the Webhook Integration guide for verifying the signature."
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://phka-pay.rikrey.com",
+      "description": "Production"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "api-key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      },
+      "api-auth-type": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-auth-type",
+        "description": "Set to `api-key` for Bakong KHQR or `api-payway` for Payway."
+      },
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "better-auth.session_token"
+      }
+    },
+    "schemas": {
+      "CreatePaymentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdatePaymentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateApiKeyDto": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Human-readable label for this key.",
+            "example": "Production server"
+          },
+          "bakongUserDataId": {
+            "type": "string",
+            "description": "Optional bakong-user-data record to bind this key to.",
+            "format": "uuid"
+          }
+        }
+      },
+      "ValidateApiKeyDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The API key string to check.",
+            "example": "pk_live_..."
+          }
+        },
+        "required": [
+          "key"
+        ]
+      },
+      "UpdateApiKeyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateBakongUserDataDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateBakongUserDataDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateWebhookDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Destination URL that will receive POST events.",
+            "example": "https://your-app.com/webhooks/payments"
+          },
+          "events": {
+            "description": "Event types this webhook should receive. Empty/omitted means all events.",
+            "example": [
+              "payment.succeeded",
+              "transaction.updated"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "secret": {
+            "type": "string",
+            "description": "Shared secret used to sign outgoing payloads."
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          },
+          "apiKeyId": {
+            "type": "string",
+            "description": "API key this webhook is scoped to."
+          }
+        },
+        "required": [
+          "url",
+          "secret",
+          "apiKeyId"
+        ]
+      },
+      "UpdateWebhookDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateWebhookEventDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateBakongTokenDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateBakongTokenDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "GenerateKHQRDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Payment amount.",
+            "example": 10.5,
+            "minimum": 0.01
+          },
+          "currency": {
+            "type": "number",
+            "description": "ISO 4217 numeric currency code. 840 = USD, 116 = KHR.",
+            "enum": [
+              840,
+              116
+            ],
+            "example": 840
+          },
+          "expiredAfter": {
+            "type": "number",
+            "description": "QR expiration window in milliseconds (1,000 – 300,000).",
+            "minimum": 1000,
+            "maximum": 300000,
+            "example": 60000
+          },
+          "meta": {
+            "type": "object",
+            "description": "Arbitrary metadata attached to the request log.",
+            "example": {
+              "orderId": "order_abc123"
+            }
+          }
+        },
+        "required": [
+          "amount",
+          "currency",
+          "expiredAfter"
+        ]
+      },
+      "GenerateKHQRDemoDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Payment amount.",
+            "example": 10.5,
+            "minimum": 0.01
+          },
+          "currency": {
+            "type": "number",
+            "description": "ISO 4217 numeric currency code. 840 = USD, 116 = KHR.",
+            "enum": [
+              840,
+              116
+            ],
+            "example": 840
+          },
+          "expiredAfter": {
+            "type": "number",
+            "description": "QR expiration window in milliseconds (1,000 – 300,000).",
+            "minimum": 1000,
+            "maximum": 300000,
+            "example": 60000
+          },
+          "meta": {
+            "type": "object",
+            "description": "Arbitrary metadata attached to the request log.",
+            "example": {
+              "orderId": "order_abc123"
+            }
+          },
+          "apiKeyId": {
+            "type": "string",
+            "description": "The id of the API key (owned by the signed-in user) to use.",
+            "example": "apikey_abc123"
+          }
+        },
+        "required": [
+          "amount",
+          "currency",
+          "expiredAfter",
+          "apiKeyId"
+        ]
+      },
+      "MerchantInfoDto": {
+        "type": "object",
+        "properties": {
+          "acquiringBank": {
+            "type": "string",
+            "example": "ABA"
+          },
+          "bakongAccountID": {
+            "type": "string",
+            "example": "merchant_id@aclb"
+          },
+          "merchantName": {
+            "type": "string",
+            "example": "PhkaPay Demo"
+          },
+          "merchantCity": {
+            "type": "string",
+            "example": "Phnom Penh"
+          },
+          "mobileNumber": {
+            "type": "string",
+            "example": "+85512345678"
+          },
+          "storeLabel": {
+            "type": "string",
+            "example": "Store 01"
+          },
+          "terminalLabel": {
+            "type": "string",
+            "example": "Terminal A"
+          },
+          "merchantNameAlternateLanguage": {
+            "type": "string",
+            "example": "ផ្កាផេ"
+          },
+          "merchantCityAlternateLanguage": {
+            "type": "string",
+            "example": "ភ្នំពេញ"
+          }
+        },
+        "required": [
+          "acquiringBank",
+          "bakongAccountID",
+          "merchantName",
+          "merchantCity",
+          "mobileNumber",
+          "storeLabel",
+          "terminalLabel",
+          "merchantNameAlternateLanguage",
+          "merchantCityAlternateLanguage"
+        ]
+      },
+      "GenerateKHQRWithMerchantDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Payment amount.",
+            "example": 10.5
+          },
+          "currency": {
+            "type": "number",
+            "description": "ISO 4217 currency code. 840 = USD, 116 = KHR.",
+            "enum": [
+              840,
+              116
+            ],
+            "example": 840
+          },
+          "expiredAfter": {
+            "type": "number",
+            "description": "QR expiration window in milliseconds.",
+            "minimum": 1000,
+            "maximum": 300000,
+            "example": 60000
+          },
+          "meta": {
+            "type": "object",
+            "description": "Arbitrary metadata."
+          },
+          "merchantInfo": {
+            "$ref": "#/components/schemas/MerchantInfoDto"
+          }
+        },
+        "required": [
+          "amount",
+          "currency",
+          "expiredAfter",
+          "merchantInfo"
+        ]
+      },
+      "VerifyKHQRDto": {
+        "type": "object",
+        "properties": {
+          "qrData": {
+            "type": "string",
+            "description": "Raw KHQR string to validate.",
+            "example": "00020101021229180014merchant@aclb..."
+          }
+        },
+        "required": [
+          "qrData"
+        ]
+      },
+      "DecodeKHQRDto": {
+        "type": "object",
+        "properties": {
+          "qrData": {
+            "type": "string",
+            "description": "Raw KHQR string (the contents of the scanned QR code).",
+            "example": "00020101021229180014merchant@aclb..."
+          }
+        },
+        "required": [
+          "qrData"
+        ]
+      },
+      "PaywayDto": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "example": "order_001"
+          },
+          "amount": {
+            "type": "number",
+            "example": 9.99
+          },
+          "currency": {
+            "type": "string",
+            "example": "USD"
+          },
+          "paymentOption": {
+            "type": "string",
+            "description": "Payway payment option (e.g. `cards`, `abapay`, `bakong`).",
+            "example": "cards"
+          },
+          "items": {
+            "type": "object"
+          },
+          "firstname": {
+            "type": "string"
+          },
+          "lastname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "example": "customer@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+85512345678"
+          },
+          "continueSuccessUrl": {
+            "type": "string"
+          },
+          "cancelUrl": {
+            "type": "string"
+          },
+          "returnUrl": {
+            "type": "string"
+          },
+          "returnDeepLink": {
+            "type": "object"
+          },
+          "viewType": {
+            "type": "string",
+            "description": "`hosted_view`, `popup`, `redirect`, etc."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "purchase",
+              "pre-auth"
+            ],
+            "example": "purchase"
+          },
+          "shipping": {
+            "type": "number"
+          },
+          "skipSuccessPage": {
+            "type": "number",
+            "description": "0 or 1",
+            "example": 0
+          },
+          "customFields": {
+            "type": "object",
+            "description": "Base64-encoded JSON or object."
+          },
+          "returnParams": {
+            "type": "string"
+          },
+          "paymentGate": {
+            "type": "number"
+          },
+          "payout": {
+            "type": "object",
+            "description": "Base64-encoded JSON or object."
+          },
+          "additionalParams": {
+            "type": "object",
+            "description": "Base64-encoded JSON or object."
+          },
+          "lifetime": {
+            "type": "number",
+            "description": "Checkout session lifetime in minutes.",
+            "example": 30
+          },
+          "googlePayToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "amount",
+          "paymentOption"
+        ]
+      },
+      "CheckoutPaywayDto": {
+        "type": "object",
+        "properties": {
+          "checkoutData": {
+            "$ref": "#/components/schemas/PaywayDto"
+          },
+          "metaData": {
+            "type": "object",
+            "description": "Arbitrary metadata stored alongside the request log."
+          }
+        },
+        "required": [
+          "checkoutData"
+        ]
+      },
+      "CheckoutPaywayDemoDto": {
+        "type": "object",
+        "properties": {
+          "apiKeyId": {
+            "type": "string",
+            "description": "One of the signed-in user’s PayWay API keys."
+          },
+          "amount": {
+            "type": "number",
+            "example": 9.99
+          },
+          "currency": {
+            "type": "string",
+            "example": "USD",
+            "enum": [
+              "USD",
+              "KHR"
+            ]
+          },
+          "paymentOption": {
+            "type": "string",
+            "description": "PayWay payment option (e.g. cards, abapay, bakong).",
+            "example": "cards"
+          },
+          "lifetime": {
+            "type": "number",
+            "description": "Checkout session lifetime in minutes."
+          },
+          "orderId": {
+            "type": "string"
+          },
+          "firstname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "example": "customer@example.com"
+          }
+        },
+        "required": [
+          "apiKeyId",
+          "amount"
+        ]
+      },
+      "CreatePaywayConfigDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdatePaywayConfigDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreatePaywayWebhookDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdatePaywayWebhookDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PasswordSetupLinkDto": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  "webhooks": {
+    "payment": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Payment event delivery (sent to your URL)",
+        "description": "PhkaPay POSTs this to the webhook URL you configured when a transaction changes state. Verify the signature, then return `2xx` quickly — non-2xx responses or timeouts are retried (up to 3 attempts with backoff).\n\n**Signature:** `x-signature: sha256=<hex>` where `hex = HMAC_SHA256(secret, `${x-timestamp}.${rawBody}`)`. Hash the raw request body, not a re-serialized copy. See the Webhook Integration guide.",
+        "parameters": [
+          {
+            "name": "x-signature",
+            "in": "header",
+            "required": true,
+            "description": "HMAC-SHA256 of `${x-timestamp}.${rawBody}`, hex, prefixed `sha256=`.",
+            "schema": {
+              "type": "string",
+              "example": "sha256=9f86d0818..."
+            }
+          },
+          {
+            "name": "x-timestamp",
+            "in": "header",
+            "required": true,
+            "description": "ISO-8601 send time; also part of the signed message.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "event": {
+                    "type": "string",
+                    "enum": [
+                      "payment.created",
+                      "payment.completed",
+                      "payment.failed"
+                    ]
+                  },
+                  "transactionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "md5": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "SUCCESS",
+                      "FAILED",
+                      "EXPIRED",
+                      "PENDING"
+                    ]
+                  },
+                  "amount": {
+                    "type": "string",
+                    "example": "1"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "example": "840"
+                  },
+                  "requestLog": {
+                    "type": "object"
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "event",
+                  "transactionId",
+                  "status"
+                ]
+              },
+              "example": {
+                "event": "payment.completed",
+                "transactionId": "abcf4dd4-b7b1-460d-a309-250981498458",
+                "md5": "0335ae49...",
+                "status": "SUCCESS",
+                "amount": "1",
+                "currency": "840",
+                "requestLog": {
+                  "metaData": {
+                    "meta": {
+                      "orderId": "ORD-123"
+                    }
+                  }
+                },
+                "createdAt": "2025-08-03T15:11:13.483Z"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged. Return any 2xx quickly; the body is ignored."
+          }
+        }
+      }
+    }
+  }
+}

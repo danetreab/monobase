@@ -25,6 +25,7 @@
         "@nestjs/core": "^11.0.1",
         "@nestjs/microservices": "^11.0.1",
         "@nestjs/platform-express": "^11.0.1",
+        "@repo/auth-context": "*",
         "@repo/db": "*",
         "better-auth": "^1.6.9",
         "dotenv": "^16.4.7",
@@ -90,6 +91,7 @@
         "@nestjs/graphql": "^13.0.3",
         "@nestjs/microservices": "^11.0.1",
         "@nestjs/platform-express": "^11.0.1",
+        "@repo/auth-context": "*",
         "@repo/db": "*",
         "dayjs": "^1.11.13",
         "dotenv": "^16.4.7",
@@ -151,6 +153,14 @@
         "@vitejs/plugin-react": "^4.3.4",
         "typescript": "5.9.2",
         "vite": "^5.4.10",
+      },
+    },
+    "packages/auth-context": {
+      "name": "@repo/auth-context",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@repo/typescript-config": "*",
+        "typescript": "5.9.2",
       },
     },
     "packages/db": {
@@ -654,6 +664,8 @@
     "@repo/api-gateway": ["@repo/api-gateway@workspace:apps/backend/api-gateway"],
 
     "@repo/auth": ["@repo/auth@workspace:apps/backend/auth"],
+
+    "@repo/auth-context": ["@repo/auth-context@workspace:packages/auth-context"],
 
     "@repo/dashboard": ["@repo/dashboard@workspace:apps/dashboard"],
 
@@ -2344,8 +2356,6 @@
     "@refinedev/ui-types/dayjs": ["dayjs@1.11.20", "", {}, "sha512-YbwwqR/uYpeoP4pu043q+LTDLFBLApUP6VxRihdfNTqu4ubqMlGDLd6ErXhEgsyvY0K6nCs7nggYumAN+9uEuQ=="],
 
     "@repo/eslint-config/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
-
-    "@repo/graphql/dayjs": ["dayjs@1.11.20", "", {}, "sha512-YbwwqR/uYpeoP4pu043q+LTDLFBLApUP6VxRihdfNTqu4ubqMlGDLd6ErXhEgsyvY0K6nCs7nggYumAN+9uEuQ=="],
 
     "@typescript-eslint/eslint-plugin/ignore": ["ignore@7.0.5", "", {}, "sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg=="],
 

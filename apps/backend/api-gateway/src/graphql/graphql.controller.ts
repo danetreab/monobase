@@ -1,5 +1,6 @@
 import { Body, Controller, Inject, Post, Req, UseGuards } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
+import type { AuthSession, AuthUser } from "@repo/auth-context";
 import type { Request } from "express";
 import { firstValueFrom, timeout } from "rxjs";
 import { AuthGuard } from "../auth/auth.guard";
@@ -11,9 +12,11 @@ type GraphqlRequest = {
   operationName?: string | null;
 };
 
+// AuthGuard populates these from the validated session before this controller
+// forwards them to the graphql service (see @repo/auth-context).
 type AuthedRequest = Request & {
-  user?: { id: string; email: string; role: string | null } | null;
-  session?: unknown;
+  user?: AuthUser | null;
+  session?: AuthSession | null;
 };
 
 @Controller("graphql/v1")
