@@ -1,4 +1,13 @@
-import { Button, Form, Input, Modal, Select, Space, Typography, message } from "antd";
+import {
+  Button,
+  Form,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Typography,
+  message,
+} from "antd";
 import { CopyOutlined, LinkOutlined } from "@ant-design/icons";
 import { useInvalidate } from "@refinedev/core";
 import axios from "axios";
@@ -6,12 +15,14 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-const gqlFetch = async <T,>(query: string, variables: Record<string, unknown>): Promise<T> => {
-  const { data } = await axios.post<{ data?: T; errors?: { message: string }[] }>(
-    `${baseUrl}/graphql/v1`,
-    { query, variables },
-    { withCredentials: true },
-  );
+const gqlFetch = async <T,>(
+  query: string,
+  variables: Record<string, unknown>,
+): Promise<T> => {
+  const { data } = await axios.post<{
+    data?: T;
+    errors?: { message: string }[];
+  }>(`${baseUrl}/graphql/v1`, { query, variables }, { withCredentials: true });
   if (data.errors?.length) throw new Error(data.errors[0].message);
   return data.data as T;
 };
@@ -61,7 +72,9 @@ export const UsersCreate = () => {
 
       const { inviteToken } = result.createAdminUser;
       if (inviteToken) {
-        setInviteLink(`${window.location.origin}/accept-invite?token=${inviteToken}`);
+        setInviteLink(
+          `${window.location.origin}/accept-invite?token=${inviteToken}`,
+        );
         form.resetFields();
       } else {
         messageApi.success("User created successfully");
@@ -93,7 +106,11 @@ export const UsersCreate = () => {
           inviteLink ? (
             <Space>
               <Button onClick={close}>Close</Button>
-              <Button type="primary" icon={<CopyOutlined />} onClick={handleCopyLink}>
+              <Button
+                type="primary"
+                icon={<CopyOutlined />}
+                onClick={handleCopyLink}
+              >
                 Copy Invite Link
               </Button>
             </Space>
@@ -112,7 +129,10 @@ export const UsersCreate = () => {
               readOnly
               prefix={<LinkOutlined />}
               suffix={
-                <CopyOutlined style={{ cursor: "pointer" }} onClick={handleCopyLink} />
+                <CopyOutlined
+                  style={{ cursor: "pointer" }}
+                  onClick={handleCopyLink}
+                />
               }
             />
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -154,7 +174,9 @@ export const UsersCreate = () => {
               name="password"
               label="Password"
               extra="Leave blank to generate an invite link instead."
-              rules={[{ min: 8, message: "Password must be at least 8 characters" }]}
+              rules={[
+                { min: 8, message: "Password must be at least 8 characters" },
+              ]}
             >
               <Input.Password />
             </Form.Item>
@@ -170,7 +192,9 @@ export const UsersCreate = () => {
                       if (!value || getFieldValue("password") === value) {
                         return Promise.resolve();
                       }
-                      return Promise.reject(new Error("Passwords do not match"));
+                      return Promise.reject(
+                        new Error("Passwords do not match"),
+                      );
                     },
                   }),
                 ]}
